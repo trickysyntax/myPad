@@ -1,0 +1,38 @@
+# macOS
+.DS_Store
+._*
+.AppleDouble
+.LSOverride
+
+# Xcode user/local state
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.moved-aside
+DerivedData/
+build/
+Build/
+
+# Swift Package Manager build/cache output
+.build/
+.swiftpm/
+
+# Swift/Xcode generated artifacts
+*.swiftmodule
+*.swiftdoc
+*.swiftsourceinfo
+*.abi.json
+*.o
+*.d
+*.dia
+ModuleCache/
+Index.noindex/
+
+# Archives / distribution output
+*.xcarchive
+*.ipa
+*.dSYM
+*.dSYM.zip
+
+# Hermes/local agent handoff state
+.hermes/

@@ -23,6 +23,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0311E8332FC4E6930047C5C4 /* MyPadKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +66,7 @@
 			);
 			name = myPad;
 			packageProductDependencies = (
+				0311E8322FC4E6930047C5C4 /* MyPadKit */,
 			);
 			productName = myPad;
 			productReference = CB1279DE2FBA32E700B3465A /* myPad.app */;
@@ -94,6 +96,9 @@
 			);
 			mainGroup = CB1279D52FBA32E700B3465A;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				CB128A322FBA355300B3465A /* XCLocalSwiftPackageReference "MyPadKit" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CB1279DF2FBA32E700B3465A /* Products */;
 			projectDirPath = "";
@@ -123,6 +128,21 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		CB128A322FBA355300B3465A /* XCLocalSwiftPackageReference "MyPadKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = MyPadKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		0311E8322FC4E6930047C5C4 /* MyPadKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CB128A322FBA355300B3465A /* XCLocalSwiftPackageReference "MyPadKit" */;
+			productName = MyPadKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		CB1279E72FBA32E800B3465A /* Debug */ = {
@@ -264,7 +284,8 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = org.ciderhouse.myPad;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = myPad;
+				PRODUCT_NAME = "myPad Studio";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -295,7 +316,8 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = org.ciderhouse.myPad;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = myPad;
+				PRODUCT_NAME = "myPad Studio";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;

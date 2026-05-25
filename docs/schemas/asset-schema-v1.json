@@ -1,0 +1,210 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mypad.susie.cloud/schemas/asset-schema-v1.json",
+  "title": "myPad Asset Data Model — JSON Schema v1",
+  "description": "Definitive JSON Schema for Asset (AssetTemplate) and AssetFinish objects in the myPad system. Covers the API response shapes for list, detail, and finish endpoints.",
+
+  "$defs": {
+    "VendorRef": {
+      "title": "Vendor Reference",
+      "description": "Lightweight vendor reference nested into asset responses.",
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "name": { "type": "string", "maxLength": 255 }
+      },
+      "additionalProperties": false
+    },
+
+    "AssetFinish": {
+      "title": "Asset Finish",
+      "description": "A finish/colorway/variant that belongs to an asset template.",
+      "type": "object",
+      "required": ["id", "asset_template_id", "name", "finish_type", "in_stock", "sort_order"],
+      "properties": {
+        "id":                    { "type": "string", "format": "uuid" },
+        "asset_template_id":     { "type": "string", "format": "uuid" },
+        "name":                  { "type": "string", "maxLength": 255 },
+        "finish_type":           { "type": "string", "maxLength": 50 },
+        "upcharge_pct":          { "type": ["number", "null"] },
+        "grade":                 { "type": ["string", "null"], "maxLength": 20 },
+        "width":                 { "type": ["string", "null"], "maxLength": 50 },
+        "repeat":                { "type": ["string", "null"], "maxLength": 50 },
+        "railroad":              { "type": ["boolean", "null"] },
+        "source":                { "type": ["string", "null"], "maxLength": 255 },
+        "pattern_color":         { "type": ["string", "null"], "maxLength": 255 },
+        "in_stock":              { "type": "boolean" },
+        "swatch_image_url":      { "type": ["string", "null"], "maxLength": 500, "format": "uri" },
+        "sort_order":            { "type": "integer", "minimum": 0 },
+        "created_at":            { "type": ["string", "null"], "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+
+    "AssetTemplateSummary": {
+      "title": "Asset Template (Summary)",
+      "description": "Asset object as returned by the list/search endpoint. Does not include the finishes array; includes a finish_count instead.",
+      "type": "object",
+      "required": ["id", "name", "is_discontinued", "finish_count"],
+      "properties": {
+        "id":                 { "type": "string", "format": "uuid" },
+        "vendor_id":          { "type": ["string", "null"], "format": "uuid" },
+        "vendor": {
+          "oneOf": [
+            { "$ref": "#/$defs/VendorRef" },
+            { "type": "null" }
+          ]
+        },
+        "name":               { "type": "string", "maxLength": 255 },
+        "sku":                { "type": ["string", "null"], "maxLength": 100 },
+        "category":           { "type": ["string", "null"], "maxLength": 100 },
+        "description":        { "type": ["string", "null"] },
+        "msrp":               { "type": ["number", "null"] },
+        "trade_price":        { "type": ["number", "null"] },
+        "lead_time_weeks":    { "type": ["integer", "null"], "minimum": 0 },
+        "minimum_order":      { "type": ["string", "null"], "maxLength": 255 },
+        "dimensions":         { "type": ["string", "null"], "maxLength": 255 },
+        "care_instructions":  { "type": ["string", "null"] },
+        "image_urls": {
+          "type": "array",
+          "items": { "type": "string", "format": "uri" }
+        },
+        "spec_sheet_url":     { "type": ["string", "null"], "maxLength": 500, "format": "uri" },
+        "is_discontinued":    { "type": "boolean" },
+        "finish_count":       { "type": "integer", "minimum": 0 },
+        "created_at":         { "type": ["string", "null"], "format": "date-time" },
+        "updated_at":         { "type": ["string", "null"], "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+
+    "AssetTemplateDetail": {
+      "title": "Asset Template (Detail)",
+      "description": "Asset object as returned by the single-asset detail endpoint. Includes the full finishes array.",
+      "type": "object",
+      "required": ["id", "name", "is_discontinued", "finish_count", "finishes"],
+      "properties": {
+        "id":                 { "type": "string", "format": "uuid" },
+        "vendor_id":          { "type": ["string", "null"], "format": "uuid" },
+        "vendor": {
+          "oneOf": [
+            { "$ref": "#/$defs/VendorRef" },
+            { "type": "null" }
+          ]
+        },
+        "name":               { "type": "string", "maxLength": 255 },
+        "sku":                { "type": ["string", "null"], "maxLength": 100 },
+        "category":           { "type": ["string", "null"], "maxLength": 100 },
+        "description":        { "type": ["string", "null"] },
+        "msrp":               { "type": ["number", "null"] },
+        "trade_price":        { "type": ["number", "null"] },
+        "lead_time_weeks":    { "type": ["integer", "null"], "minimum": 0 },
+        "minimum_order":      { "type": ["string", "null"], "maxLength": 255 },
+        "dimensions":         { "type": ["string", "null"], "maxLength": 255 },
+        "care_instructions":  { "type": ["string", "null"] },
+        "image_urls": {
+          "type": "array",
+          "items": { "type": "string", "format": "uri" }
+        },
+        "spec_sheet_url":     { "type": ["string", "null"], "maxLength": 500, "format": "uri" },
+        "is_discontinued":    { "type": "boolean" },
+        "finish_count":       { "type": "integer", "minimum": 0 },
+        "created_at":         { "type": ["string", "null"], "format": "date-time" },
+        "updated_at":         { "type": ["string", "null"], "format": "date-time" },
+        "finishes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/AssetFinish" },
+          "description": "Full list of finishes belonging to this asset, ordered by sort_order."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "PaginatedAssetsResponse": {
+      "title": "Paginated Asset List Response",
+      "description": "Response shape for GET /api/assets.",
+      "type": "object",
+      "required": ["total", "limit", "offset", "data"],
+      "properties": {
+        "total":  { "type": "integer", "minimum": 0 },
+        "limit":  { "type": "integer", "minimum": 1, "maximum": 200 },
+        "offset": { "type": "integer", "minimum": 0 },
+        "data": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/AssetTemplateSummary" }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "FinishesListResponse": {
+      "title": "Finishes List Response",
+      "description": "Response shape for GET /api/assets/{id}/finishes.",
+      "type": "object",
+      "required": ["data"],
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/AssetFinish" }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "AssetCreateRequest": {
+      "title": "Asset Create Request Body",
+      "description": "Request body for POST /api/assets.",
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "vendor_id":          { "type": "string", "format": "uuid" },
+        "name":               { "type": "string", "maxLength": 255 },
+        "sku":                { "type": "string", "maxLength": 100 },
+        "category":           { "type": "string", "maxLength": 100 },
+        "description":        { "type": "string" },
+        "msrp":               { "type": "number" },
+        "trade_price":        { "type": "number" },
+        "lead_time_weeks":    { "type": "integer", "minimum": 0 },
+        "minimum_order":      { "type": "string", "maxLength": 255 },
+        "dimensions":         { "type": "string", "maxLength": 255 },
+        "care_instructions":  { "type": "string" },
+        "image_urls": {
+          "type": "array",
+          "items": { "type": "string", "format": "uri" },
+          "default": []
+        },
+        "spec_sheet_url":     { "type": "string", "maxLength": 500, "format": "uri" },
+        "is_discontinued":    { "type": "boolean", "default": false }
+      },
+      "additionalProperties": false
+    },
+
+    "AssetUpdateRequest": {
+      "title": "Asset Update Request Body",
+      "description": "Request body for PUT /api/assets/{id}. All fields optional; only provided fields are updated.",
+      "type": "object",
+      "properties": {
+        "vendor_id":          { "type": "string", "format": "uuid" },
+        "name":               { "type": "string", "maxLength": 255 },
+        "sku":                { "type": "string", "maxLength": 100 },
+        "category":           { "type": "string", "maxLength": 100 },
+        "description":        { "type": "string" },
+        "msrp":               { "type": "number" },
+        "trade_price":        { "type": "number" },
+        "lead_time_weeks":    { "type": "integer", "minimum": 0 },
+        "minimum_order":      { "type": "string", "maxLength": 255 },
+        "dimensions":         { "type": "string", "maxLength": 255 },
+        "care_instructions":  { "type": "string" },
+        "image_urls": {
+          "type": "array",
+          "items": { "type": "string", "format": "uri" }
+        },
+        "spec_sheet_url":     { "type": "string", "maxLength": 500, "format": "uri" },
+        "is_discontinued":    { "type": "boolean" }
+      },
+      "additionalProperties": false,
+      "minProperties": 1
+    }
+  }
+}
