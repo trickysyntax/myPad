@@ -123,6 +123,53 @@ final class ModelDecodingTests: XCTestCase {
         XCTAssertEqual(selection.groupKey, "sofa-options")
     }
 
+    // MARK: - AssetFinishListResponse
+
+    func testDecodeAssetFinishListResponseEnvelope() throws {
+        let json = """
+        {
+            "data": [
+                {
+                    "id": "finish-1",
+                    "asset_template_id": "asset-1",
+                    "name": "Performance Weave, Oatmeal",
+                    "finish_type": "fabric",
+                    "upcharge_pct": 12.5,
+                    "grade": "A",
+                    "width": "54 in",
+                    "repeat": "7 V x 4 H",
+                    "railroad": false,
+                    "source": "Vendor memo",
+                    "vendor": "Style Source",
+                    "pattern_color": "Oatmeal",
+                    "yardage": "6.5",
+                    "net_price": "42.00",
+                    "markup": "20%",
+                    "sale_price": "50.40",
+                    "ship_to": "Workroom",
+                    "photo_url": "https://example.com/swatch.jpg",
+                    "in_stock": true,
+                    "swatch_image_url": "https://example.com/swatch.jpg",
+                    "image_urls": ["https://example.com/detail.jpg"],
+                    "sort_order": 1,
+                    "created_at": "2026-05-25T12:00:00Z",
+                    "updated_at": "2026-05-25T12:30:00Z"
+                }
+            ]
+        }
+        """.data(using: .utf8)!
+
+        let response = try decoder.decode(AssetFinishListResponse.self, from: json)
+        XCTAssertEqual(response.data.count, 1)
+        XCTAssertEqual(response.data[0].id, "finish-1")
+        XCTAssertEqual(response.data[0].assetTemplateId, "asset-1")
+        XCTAssertEqual(response.data[0].name, "Performance Weave, Oatmeal")
+        XCTAssertEqual(response.data[0].finishType, "fabric")
+        XCTAssertEqual(response.data[0].repeat, "7 V x 4 H")
+        XCTAssertEqual(response.data[0].inStock, true)
+        XCTAssertEqual(response.data[0].imageUrls, ["https://example.com/detail.jpg"])
+    }
+
     // MARK: - SyncEnvelope
 
     func testDecodeSyncEnvelope() throws {

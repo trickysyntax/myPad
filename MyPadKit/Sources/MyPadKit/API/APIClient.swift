@@ -248,7 +248,8 @@ public actor APIClient {
     }
 
     public func getFinishes(assetId: String) async throws -> [AssetFinishSummary] {
-        try await perform(.getFinishes(assetId: assetId))
+        let response: AssetFinishListResponse = try await perform(.getFinishes(assetId: assetId))
+        return response.data
     }
 
     public func createFinish(

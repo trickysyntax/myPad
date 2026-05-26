@@ -101,7 +101,7 @@ struct SelectionDetailView: View {
         }
         .sheet(isPresented: $showAddFinish) {
             SelectionFinishFormView(title: "Add Finish") { fields in
-                try await api.createSelectionFinish(
+                _ = try await api.createSelectionFinish(
                     projectId: projectId,
                     roomId: roomId,
                     selectionId: currentSelection.id,
