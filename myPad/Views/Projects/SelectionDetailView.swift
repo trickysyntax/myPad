@@ -14,6 +14,8 @@ struct SelectionDetailView: View {
     @State private var editingFinish: SelectionFinish?
     @State private var isUpdating = false
     @State private var localAttachments: [String] = []
+    @State private var selectedHeroPhotoIndex = 0
+    @State private var fullscreenPhotoURL: String?
 
     private let api = APIClient.shared
 
@@ -26,67 +28,70 @@ struct SelectionDetailView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .top) {
-            // Fixed background image
-            imageBackground
-                .ignoresSafeArea(edges: .top)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                imageBackground
+                    .ignoresSafeArea(edges: .top)
 
-            // Scrollable content panel
-            ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    // Transparent spacer to push content below the image
-                    Color.clear.frame(height: 260)
+                    productInfo
 
-                    // Content card slides over the image
-                    VStack(alignment: .leading, spacing: 0) {
-                        // Attached photos
-                        if !localAttachments.isEmpty {
-                            photosSection
-                            Divider().padding(.horizontal)
-                        }
+                    Divider().padding(.horizontal)
+                    photosSection
 
-                        // Product info
-                        productInfo
+                    Divider().padding(.horizontal)
+                    finishesSection
 
+                    Divider().padding(.horizontal)
+                    statusSection
+
+                    Divider().padding(.horizontal)
+                    pricingSection
+
+                    Divider().padding(.horizontal)
+                    notesSection
+
+                    if let groupKey = currentSelection.groupKey, !groupKey.isEmpty {
                         Divider().padding(.horizontal)
-                        finishesSection
-
-                        Divider().padding(.horizontal)
-
-                        // Status pipeline
-                        statusSection
-
-                        Divider().padding(.horizontal)
-
-                        // Pricing details
-                        pricingSection
-
-                        Divider().padding(.horizontal)
-
-                        // Notes
-                        notesSection
-
-                        // Candidate group
-                        if let groupKey = currentSelection.groupKey, !groupKey.isEmpty {
-                            Divider().padding(.horizontal)
-                            candidateGroupSection
-                        }
+                        candidateGroupSection
                     }
-                    .background(Color.studioSurface)
-                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                 }
+                .background(Color.studioSurface)
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .offset(y: -20)
+                .padding(.bottom, -20)
             }
         }
         .background(Color.studioSurface)
-        .navigationTitle(currentSelection.template?.name ?? "Selection")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                HStack(spacing: 12) {
-                    PhotoCaptureButton { url in
-                        Task { await addPhoto(url) }
+                Menu {
+                    PhotoSourceMenu(
+                        onPhotoUploaded: { url in
+                            Task { await addPhoto(url) }
+                        },
+                        label: "Add Photo",
+                        systemImage: "photo.badge.plus",
+                        style: .bordered
+                    )
+
+                    Divider()
+
+                    Button {
+                        showAddFinish = true
+                    } label: {
+                        Label("Add Finish", systemImage: "paintpalette")
                     }
-                    Button("Edit") { showEdit = true }
+
+                    Button {
+                        showEdit = true
+                    } label: {
+                        Label("Edit Selection", systemImage: "pencil")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
                 }
             }
         }
@@ -122,6 +127,12 @@ struct SelectionDetailView: View {
                 await refresh()
             }
         }
+        .fullScreenCover(item: Binding(
+            get: { fullscreenPhotoURL.map(SelectionPhotoViewerItem.init(urlString:)) },
+            set: { newValue in fullscreenPhotoURL = newValue?.urlString }
+        )) { item in
+            SelectionFullscreenPhotoViewer(urlString: item.urlString)
+        }
         .task {
             // Refresh from server on appear
             await refresh()
@@ -130,34 +141,66 @@ struct SelectionDetailView: View {
 
     // MARK: - Background Image
 
+    private var heroPhotoURLs: [String] {
+        var urls: [String] = []
+        func append(_ candidate: String?) {
+            guard let candidate, !candidate.isEmpty, URL(string: candidate) != nil else { return }
+            if !urls.contains(candidate) { urls.append(candidate) }
+        }
+
+        append(currentSelection.sourceUrl)
+        currentSelection.template?.imageUrls?.forEach { append($0) }
+        localAttachments.forEach { append($0) }
+        return urls
+    }
+
     private var imageBackground: some View {
-        let imageUrl: URL? = {
-            if let urlStr = currentSelection.sourceUrl, let url = URL(string: urlStr) {
-                return url
-            }
-            if let urlStr = currentSelection.template?.imageUrls?.first, let url = URL(string: urlStr) {
-                return url
-            }
-            return nil
-        }()
+        let imageUrls = heroPhotoURLs
 
         return GeometryReader { geo in
-            if let url = imageUrl {
-                AsyncImageLoader(url: url, size: CGSize(width: geo.size.width, height: 400))
-                    .frame(width: geo.size.width, height: 400)
-                    .clipped()
-            } else {
-                Rectangle()
-                    .fill(Color.studioSurface)
-                    .frame(height: 280)
-                    .overlay {
-                        Image(systemName: "photo")
-                            .font(.system(size: 40, weight: .light))
-                            .foregroundStyle(Color.studioAccent.opacity(0.3))
+            ZStack {
+                if !imageUrls.isEmpty {
+                    TabView(selection: $selectedHeroPhotoIndex) {
+                        ForEach(Array(imageUrls.enumerated()), id: \.offset) { index, urlStr in
+                            Group {
+                                if let url = URL(string: urlStr) {
+                                    AsyncImageLoader(url: url, size: CGSize(width: geo.size.width, height: 400))
+                                        .frame(width: geo.size.width, height: 400)
+                                        .clipped()
+                                } else {
+                                    selectionImagePlaceholder
+                                }
+                            }
+                            .contentShape(Rectangle())
+                            .simultaneousGesture(
+                                TapGesture().onEnded { fullscreenPhotoURL = urlStr }
+                            )
+                            .tag(index)
+                        }
                     }
+                    .tabViewStyle(.page(indexDisplayMode: imageUrls.count > 1 ? .automatic : .never))
+                    .onChange(of: imageUrls.count) { _, count in
+                        if selectedHeroPhotoIndex >= count {
+                            selectedHeroPhotoIndex = max(0, count - 1)
+                        }
+                    }
+                } else {
+                    selectionImagePlaceholder
+                }
             }
         }
         .frame(height: 320)
+    }
+
+    private var selectionImagePlaceholder: some View {
+        Rectangle()
+            .fill(Color.studioSurface)
+            .frame(height: 320)
+            .overlay {
+                Image(systemName: "photo")
+                    .font(.system(size: 40, weight: .light))
+                    .foregroundStyle(Color.studioAccent.opacity(0.3))
+            }
     }
 
     // MARK: - Image (deprecated, replaced by imageBackground)
@@ -196,18 +239,57 @@ struct SelectionDetailView: View {
     // MARK: - Photos
 
     private var photosSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("PHOTOS")
-                .font(.studioCaption())
-                .fontWeight(.semibold)
-                .foregroundStyle(Color.studioSecondary)
-                .padding(.horizontal)
+        let imageUrls = heroPhotoURLs
 
-            PhotoGalleryRow(photoUrls: localAttachments) { index in
-                Task { await removePhoto(at: index) }
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center) {
+                sectionLabel("PHOTOS")
+                Spacer()
+                PhotoSourceMenu(
+                    onPhotoUploaded: { url in
+                        Task { await addPhoto(url) }
+                    },
+                    label: imageUrls.isEmpty ? "Add Photo" : "Add",
+                    systemImage: "photo.badge.plus",
+                    style: .bordered
+                )
+            }
+
+            if imageUrls.isEmpty {
+                Text("No photos yet.")
+                    .font(.studioCaption(size: 14))
+                    .foregroundStyle(Color.studioSecondary)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(Array(imageUrls.enumerated()), id: \.offset) { index, urlStr in
+                            SelectionPhotoThumbnail(
+                                urlString: urlStr,
+                                isSelected: index == selectedHeroPhotoIndex,
+                                canDelete: localAttachments.contains(urlStr),
+                                onSelect: { selectedHeroPhotoIndex = index },
+                                onDelete: {
+                                    if let attachmentIndex = localAttachments.firstIndex(of: urlStr) {
+                                        Task { await removePhoto(at: attachmentIndex) }
+                                    }
+                                }
+                            )
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+                .padding(.horizontal, -16)
             }
         }
-        .padding(.vertical, 8)
+        .padding()
+    }
+
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.studioCaption())
+            .fontWeight(.semibold)
+            .tracking(0.4)
+            .foregroundStyle(Color.studioSecondary)
     }
 
     // MARK: - Product Info
@@ -216,14 +298,13 @@ struct SelectionDetailView: View {
         VStack(alignment: .leading, spacing: 6) {
             if let template = currentSelection.template {
                 Text(template.name)
-                    .font(.studioHeading(size: 22))
+                    .font(.studioHeading(size: 24))
                     .foregroundStyle(Color.studioText)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                if let vendor = template.vendor {
-                    Text(vendor.name)
-                        .font(.studioSubheading())
-                        .foregroundStyle(Color.studioAccent)
-                }
+                Text(template.vendor?.name ?? "Style Source")
+                    .font(.studioSubheading())
+                    .foregroundStyle(Color.studioAccent)
 
                 if let sku = template.sku {
                     Text("SKU: \(sku)")
@@ -283,10 +364,11 @@ struct SelectionDetailView: View {
                     .foregroundStyle(Color.studioSecondary)
                 Spacer()
                 Button { showAddFinish = true } label: {
-                    Label("Add Finish", systemImage: "plus")
-                        .font(.studioCaption(size: 12))
+                    Label("Add Finish", systemImage: "plus.circle")
+                        .font(.studioCaption(size: 13))
                 }
-                .buttonStyle(StudioButtonStyle(prominent: false))
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.studioAccent)
             }
 
             if (currentSelection.finishes ?? []).isEmpty {
@@ -501,6 +583,7 @@ struct SelectionDetailView: View {
     private func addPhoto(_ url: String) async {
         let updated = localAttachments + [url]
         localAttachments = updated
+        selectedHeroPhotoIndex = max(0, heroPhotoURLs.count - 1)
         await persistAttachments(updated)
     }
 
@@ -508,6 +591,7 @@ struct SelectionDetailView: View {
         var updated = localAttachments
         updated.remove(at: index)
         localAttachments = updated
+        selectedHeroPhotoIndex = min(selectedHeroPhotoIndex, max(0, heroPhotoURLs.count - 1))
         await persistAttachments(updated)
     }
 
@@ -570,6 +654,7 @@ struct SelectionDetailView: View {
             if let updated = all.first(where: { $0.id == selection.id }) {
                 currentSelection = updated
                 localAttachments = updated.attachments ?? []
+                selectedHeroPhotoIndex = min(selectedHeroPhotoIndex, max(0, heroPhotoURLs.count - 1))
             }
         } catch {}
     }
@@ -580,6 +665,139 @@ struct SelectionDetailView: View {
         f.numberStyle = .currency
         f.currencyCode = "USD"
         return f.string(from: NSNumber(value: value)) ?? "$0"
+    }
+}
+
+private struct SelectionPhotoThumbnail: View {
+    let urlString: String
+    let isSelected: Bool
+    let canDelete: Bool
+    let onSelect: () -> Void
+    let onDelete: () -> Void
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Button(action: onSelect) {
+                AsyncImageLoader(url: URL(string: urlString), size: CGSize(width: 92, height: 92))
+                    .frame(width: 92, height: 92)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(isSelected ? Color.studioAccent : Color.studioDivider.opacity(0.7), lineWidth: isSelected ? 2 : 0.5)
+                    }
+            }
+            .buttonStyle(.plain)
+
+            if canDelete {
+                Button(action: onDelete) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(Color.white)
+                        .frame(width: 24, height: 24)
+                        .background(Color.black.opacity(0.55))
+                        .clipShape(Circle())
+                        .padding(5)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+private struct SelectionPhotoViewerItem: Identifiable {
+    let urlString: String
+    var id: String { urlString }
+}
+
+private struct SelectionFullscreenPhotoViewer: View {
+    let urlString: String
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Color.black.ignoresSafeArea()
+
+            if let url = URL(string: urlString) {
+                SelectionZoomableRemoteImage(url: url)
+                    .ignoresSafeArea()
+            } else {
+                Image(systemName: "photo")
+                    .font(.largeTitle)
+                    .foregroundStyle(.white.opacity(0.7))
+            }
+
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 40, height: 40)
+                    .background(Color.black.opacity(0.55))
+                    .clipShape(Circle())
+            }
+            .padding(24)
+        }
+    }
+}
+
+private struct SelectionZoomableRemoteImage: UIViewRepresentable {
+    let url: URL
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeUIView(context: Context) -> UIScrollView {
+        let scrollView = UIScrollView()
+        scrollView.delegate = context.coordinator
+        scrollView.minimumZoomScale = 1
+        scrollView.maximumZoomScale = 5
+        scrollView.backgroundColor = .black
+        scrollView.showsVerticalScrollIndicator = false
+        scrollView.showsHorizontalScrollIndicator = false
+        scrollView.bouncesZoom = true
+
+        let imageView = UIImageView()
+        imageView.contentMode = .scaleAspectFit
+        imageView.clipsToBounds = true
+        scrollView.addSubview(imageView)
+        context.coordinator.imageView = imageView
+        context.coordinator.load(url: url, in: scrollView)
+        return scrollView
+    }
+
+    func updateUIView(_ scrollView: UIScrollView, context: Context) {
+        context.coordinator.layout(in: scrollView)
+        context.coordinator.load(url: url, in: scrollView)
+    }
+
+    final class Coordinator: NSObject, UIScrollViewDelegate {
+        weak var imageView: UIImageView?
+        private var currentURL: URL?
+
+        func viewForZooming(in scrollView: UIScrollView) -> UIView? {
+            imageView
+        }
+
+        func load(url: URL, in scrollView: UIScrollView) {
+            guard currentURL != url else { return }
+            currentURL = url
+            imageView?.image = nil
+            Task {
+                guard let (data, _) = try? await URLSession.shared.data(from: url),
+                      let image = UIImage(data: data) else { return }
+                await MainActor.run {
+                    self.imageView?.image = image
+                    scrollView.zoomScale = 1
+                    self.layout(in: scrollView)
+                }
+            }
+        }
+
+        func layout(in scrollView: UIScrollView) {
+            guard let imageView else { return }
+            imageView.frame = scrollView.bounds
+            scrollView.contentSize = scrollView.bounds.size
+        }
     }
 }
 

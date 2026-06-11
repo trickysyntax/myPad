@@ -18,6 +18,114 @@ final class SyncRegressionTests: XCTestCase {
         )
     }
 
+    func testSyncEnvelopePersistsEmbeddedProjectAndRoomSpaceCaptures() throws {
+        let container = try makeInMemoryContainer()
+        let context = ModelContext(container)
+        context.autosaveEnabled = false
+
+        let json = """
+        {
+          "sync_version": 1,
+          "mode": "changes",
+          "server_time": "2026-05-26T00:00:03Z",
+          "snapshot_watermark": null,
+          "since": "2026-05-26T00:00:00Z",
+          "high_watermark": "2026-05-26T00:00:03Z",
+          "next_cursor": null,
+          "has_more": false,
+          "data": {
+            "vendors": [],
+            "asset_templates": [],
+            "asset_finishes": [],
+            "clients": [],
+            "projects": [
+              {
+                "id": "project-capture",
+                "name": "Capture Project",
+                "client": null,
+                "client_id": null,
+                "project_type": "Residential",
+                "status": "active",
+                "budget_total": null,
+                "markup_pct": null,
+                "timeline_start": null,
+                "timeline_target": null,
+                "notes": null,
+                "cover_photo_url": null,
+                "space_capture": {
+                  "id": "project-capture-1",
+                  "scope": "project",
+                  "project_id": "project-capture",
+                  "room_id": null,
+                  "usdz_url": "/uploads/space_captures/project.usdz",
+                  "captured_room_json_url": "/uploads/space_captures/project.json",
+                  "thumbnail_url": null,
+                  "metadata": {},
+                  "captured_at": "2026-05-26T00:00:01Z",
+                  "created_at": "2026-05-26T00:00:01Z",
+                  "updated_at": "2026-05-26T00:00:01Z"
+                },
+                "is_archived": false,
+                "room_count": 1,
+                "selection_count": 0,
+                "created_at": "2026-01-01T00:00:00Z",
+                "updated_at": "2026-05-26T00:00:02Z"
+              }
+            ],
+            "rooms": [
+              {
+                "id": "room-capture",
+                "project_id": "project-capture",
+                "name": "Living Room",
+                "sort_order": 0,
+                "floor_plan_url": null,
+                "photo_urls": [],
+                "space_capture": {
+                  "id": "room-capture-1",
+                  "scope": "room",
+                  "project_id": "project-capture",
+                  "room_id": "room-capture",
+                  "usdz_url": "/uploads/space_captures/room.usdz",
+                  "captured_room_json_url": null,
+                  "thumbnail_url": "/uploads/space_captures/room.png",
+                  "metadata": {},
+                  "captured_at": "2026-05-26T00:00:02Z",
+                  "created_at": "2026-05-26T00:00:02Z",
+                  "updated_at": "2026-05-26T00:00:02Z"
+                },
+                "notes": null,
+                "selection_count": 0,
+                "created_at": "2026-01-01T00:00:00Z",
+                "updated_at": "2026-05-26T00:00:02Z"
+              }
+            ],
+            "selections": [],
+            "selection_finishes": []
+          },
+          "tombstones": []
+        }
+        """.data(using: .utf8)!
+
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let envelope = try decoder.decode(SyncEnvelope.self, from: json)
+        XCTAssertEqual(envelope.data.projects.first?.spaceCapture?.id, "project-capture-1")
+        XCTAssertEqual(envelope.data.rooms.first?.spaceCapture?.id, "room-capture-1")
+
+        try SyncEngine.applySyncEnvelopeForTesting(envelope, in: context)
+        try context.save()
+
+        let projects = try context.fetch(FetchDescriptor<SDProject>())
+        XCTAssertEqual(projects.first?.spaceCaptureId, "project-capture-1")
+        XCTAssertEqual(projects.first?.spaceCaptureUsdzUrl, "/uploads/space_captures/project.usdz")
+        XCTAssertEqual(projects.first?.spaceCaptureCapturedRoomJsonUrl, "/uploads/space_captures/project.json")
+
+        let rooms = try context.fetch(FetchDescriptor<SDRoom>())
+        XCTAssertEqual(rooms.first?.spaceCaptureId, "room-capture-1")
+        XCTAssertEqual(rooms.first?.spaceCaptureUsdzUrl, "/uploads/space_captures/room.usdz")
+        XCTAssertEqual(rooms.first?.spaceCaptureThumbnailUrl, "/uploads/space_captures/room.png")
+    }
+
     func testSyncEnvelopePersistsRoomlessSelections() throws {
         let container = try makeInMemoryContainer()
         let context = ModelContext(container)

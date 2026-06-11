@@ -350,6 +350,11 @@ public final class SDProject {
     var timelineStart: Date?
     var timelineTarget: Date?
     var notes: String?
+    var spaceCaptureId: String?
+    var spaceCaptureUsdzUrl: String?
+    var spaceCaptureCapturedRoomJsonUrl: String?
+    var spaceCaptureThumbnailUrl: String?
+    var spaceCaptureCapturedAt: Date?
     var isArchived: Bool
     var roomCount: Int
     var selectionCount: Int
@@ -369,6 +374,11 @@ public final class SDProject {
         status: String = "active", budgetTotal: Double? = nil,
         markupPct: Double? = nil, timelineStart: Date? = nil,
         timelineTarget: Date? = nil, notes: String? = nil,
+        spaceCaptureId: String? = nil,
+        spaceCaptureUsdzUrl: String? = nil,
+        spaceCaptureCapturedRoomJsonUrl: String? = nil,
+        spaceCaptureThumbnailUrl: String? = nil,
+        spaceCaptureCapturedAt: Date? = nil,
         isArchived: Bool = false, roomCount: Int = 0,
         selectionCount: Int = 0, lastSyncedAt: Date = .now,
         createdAt: Date? = nil, updatedAt: Date? = nil
@@ -384,6 +394,11 @@ public final class SDProject {
         self.timelineStart = timelineStart
         self.timelineTarget = timelineTarget
         self.notes = notes
+        self.spaceCaptureId = spaceCaptureId
+        self.spaceCaptureUsdzUrl = spaceCaptureUsdzUrl
+        self.spaceCaptureCapturedRoomJsonUrl = spaceCaptureCapturedRoomJsonUrl
+        self.spaceCaptureThumbnailUrl = spaceCaptureThumbnailUrl
+        self.spaceCaptureCapturedAt = spaceCaptureCapturedAt
         self.isArchived = isArchived
         self.roomCount = roomCount
         self.selectionCount = selectionCount
@@ -401,6 +416,11 @@ public final class SDRoom {
     var sortOrder: Int
     var floorPlanUrl: String?
     var photoUrls: [String]
+    var spaceCaptureId: String?
+    var spaceCaptureUsdzUrl: String?
+    var spaceCaptureCapturedRoomJsonUrl: String?
+    var spaceCaptureThumbnailUrl: String?
+    var spaceCaptureCapturedAt: Date?
     var notes: String?
     var selectionCount: Int
     var createdAt: Date?
@@ -412,7 +432,13 @@ public final class SDRoom {
     init(
         id: String, projectId: String, name: String,
         sortOrder: Int = 0, floorPlanUrl: String? = nil,
-        photoUrls: [String] = [], notes: String? = nil,
+        photoUrls: [String] = [],
+        spaceCaptureId: String? = nil,
+        spaceCaptureUsdzUrl: String? = nil,
+        spaceCaptureCapturedRoomJsonUrl: String? = nil,
+        spaceCaptureThumbnailUrl: String? = nil,
+        spaceCaptureCapturedAt: Date? = nil,
+        notes: String? = nil,
         selectionCount: Int = 0, createdAt: Date? = nil,
         updatedAt: Date? = nil
     ) {
@@ -422,6 +448,11 @@ public final class SDRoom {
         self.sortOrder = sortOrder
         self.floorPlanUrl = floorPlanUrl
         self.photoUrls = photoUrls
+        self.spaceCaptureId = spaceCaptureId
+        self.spaceCaptureUsdzUrl = spaceCaptureUsdzUrl
+        self.spaceCaptureCapturedRoomJsonUrl = spaceCaptureCapturedRoomJsonUrl
+        self.spaceCaptureThumbnailUrl = spaceCaptureThumbnailUrl
+        self.spaceCaptureCapturedAt = spaceCaptureCapturedAt
         self.notes = notes
         self.selectionCount = selectionCount
         self.createdAt = createdAt

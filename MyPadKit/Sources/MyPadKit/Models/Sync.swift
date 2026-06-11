@@ -124,6 +124,7 @@ public struct SyncProject: Codable, Identifiable, Sendable {
     public let timelineTarget: String?
     public let notes: String?
     public let coverPhotoUrl: String?
+    public let spaceCapture: SpaceCaptureSummary?
     public let isArchived: Bool
     public let roomCount: Int
     public let selectionCount: Int

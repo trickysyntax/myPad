@@ -737,6 +737,132 @@ public actor APIClient {
 
         return try decoder.decode(UploadResponse.self, from: responseData)
     }
+
+    // MARK: - Space Captures
+
+    public func uploadProjectSpaceCapture(
+        projectId: String,
+        usdzData: Data,
+        capturedRoomJSONData: Data? = nil,
+        metadata: [String: String]? = nil
+    ) async throws -> SpaceCaptureSummary {
+        try await uploadSpaceCapture(
+            router: .uploadProjectSpaceCapture(projectId: projectId),
+            usdzData: usdzData,
+            usdzFilename: "project-\(projectId)-space-capture.usdz",
+            capturedRoomJSONData: capturedRoomJSONData,
+            metadata: metadata
+        )
+    }
+
+    public func uploadRoomSpaceCapture(
+        projectId: String,
+        roomId: String,
+        usdzData: Data,
+        capturedRoomJSONData: Data? = nil,
+        metadata: [String: String]? = nil
+    ) async throws -> SpaceCaptureSummary {
+        try await uploadSpaceCapture(
+            router: .uploadRoomSpaceCapture(projectId: projectId, roomId: roomId),
+            usdzData: usdzData,
+            usdzFilename: "room-\(roomId)-space-capture.usdz",
+            capturedRoomJSONData: capturedRoomJSONData,
+            metadata: metadata
+        )
+    }
+
+    public func deleteProjectSpaceCapture(projectId: String) async throws -> DeleteSpaceCaptureResponse {
+        try await perform(.deleteProjectSpaceCapture(projectId: projectId))
+    }
+
+    public func deleteRoomSpaceCapture(projectId: String, roomId: String) async throws -> DeleteSpaceCaptureResponse {
+        try await perform(.deleteRoomSpaceCapture(projectId: projectId, roomId: roomId))
+    }
+
+    public func getSpaceCapture(id: String) async throws -> SpaceCaptureSummary {
+        try await perform(.getSpaceCapture(id: id))
+    }
+
+    private func uploadSpaceCapture(
+        router: APIRouter,
+        usdzData: Data,
+        usdzFilename: String,
+        capturedRoomJSONData: Data?,
+        metadata: [String: String]?
+    ) async throws -> SpaceCaptureSummary {
+        var request = try router.urlRequest(baseURL: baseURL)
+
+        if let token = await authManager.bearerToken {
+            request.setValue(token, forHTTPHeaderField: "Authorization")
+        }
+
+        let boundary = UUID().uuidString
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+        var body = Data()
+        appendMultipartFile(
+            name: "file",
+            filename: usdzFilename,
+            contentType: "model/vnd.usdz+zip",
+            data: usdzData,
+            boundary: boundary,
+            to: &body
+        )
+        if let capturedRoomJSONData {
+            appendMultipartFile(
+                name: "captured_room_json",
+                filename: usdzFilename.replacingOccurrences(of: ".usdz", with: ".json"),
+                contentType: "application/json",
+                data: capturedRoomJSONData,
+                boundary: boundary,
+                to: &body
+            )
+        }
+        if let metadata, !metadata.isEmpty {
+            let metadataData = try JSONSerialization.data(withJSONObject: metadata, options: [.sortedKeys])
+            let metadataString = String(data: metadataData, encoding: .utf8) ?? "{}"
+            appendMultipartField(name: "metadata", value: metadataString, boundary: boundary, to: &body)
+        }
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        request.httpBody = body
+
+        let (data, response) = try await execute(request, router: router)
+        guard let http = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+        switch http.statusCode {
+        case 200...299:
+            return try decoder.decode(SpaceCaptureSummary.self, from: data)
+        case 401:
+            throw APIError.unauthorized
+        case 409:
+            throw APIError.conflict
+        default:
+            throw APIError.httpError(statusCode: http.statusCode, body: requestFailureBody(request: request, statusCode: http.statusCode, data: data))
+        }
+    }
+
+    private func appendMultipartFile(
+        name: String,
+        filename: String,
+        contentType: String,
+        data: Data,
+        boundary: String,
+        to body: inout Data
+    ) {
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"\(name)\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: \(contentType)\r\n\r\n".data(using: .utf8)!)
+        body.append(data)
+        body.append("\r\n".data(using: .utf8)!)
+    }
+
+    private func appendMultipartField(name: String, value: String, boundary: String, to body: inout Data) {
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".data(using: .utf8)!)
+        body.append(value.data(using: .utf8)!)
+        body.append("\r\n".data(using: .utf8)!)
+    }
     // MARK: - Helpers
 
     /// Perform a request with a dictionary body (for mixed-type payloads)

@@ -483,6 +483,11 @@ public final class SyncEngine {
                 sd.budgetTotal = project.budgetTotal
                 sd.roomCount = project.roomCount
                 sd.selectionCount = project.selectionCount
+                sd.spaceCaptureId = project.spaceCapture?.id
+                sd.spaceCaptureUsdzUrl = project.spaceCapture?.usdzUrl
+                sd.spaceCaptureCapturedRoomJsonUrl = project.spaceCapture?.capturedRoomJsonUrl
+                sd.spaceCaptureThumbnailUrl = project.spaceCapture?.thumbnailUrl
+                sd.spaceCaptureCapturedAt = parseDate(project.spaceCapture?.capturedAt)
                 sd.isArchived = project.isArchived
                 sd.lastSyncedAt = .now
             } else {
@@ -492,6 +497,11 @@ public final class SyncEngine {
                     projectType: project.projectType,
                     status: project.status,
                     budgetTotal: project.budgetTotal,
+                    spaceCaptureId: project.spaceCapture?.id,
+                    spaceCaptureUsdzUrl: project.spaceCapture?.usdzUrl,
+                    spaceCaptureCapturedRoomJsonUrl: project.spaceCapture?.capturedRoomJsonUrl,
+                    spaceCaptureThumbnailUrl: project.spaceCapture?.thumbnailUrl,
+                    spaceCaptureCapturedAt: parseDate(project.spaceCapture?.capturedAt),
                     isArchived: project.isArchived,
                     roomCount: project.roomCount,
                     selectionCount: project.selectionCount
@@ -527,6 +537,11 @@ public final class SyncEngine {
                 sd.sortOrder = room.sortOrder
                 sd.floorPlanUrl = room.floorPlanUrl
                 sd.photoUrls = room.photoUrls ?? []
+                sd.spaceCaptureId = room.spaceCapture?.id
+                sd.spaceCaptureUsdzUrl = room.spaceCapture?.usdzUrl
+                sd.spaceCaptureCapturedRoomJsonUrl = room.spaceCapture?.capturedRoomJsonUrl
+                sd.spaceCaptureThumbnailUrl = room.spaceCapture?.thumbnailUrl
+                sd.spaceCaptureCapturedAt = parseDate(room.spaceCapture?.capturedAt)
                 sd.notes = room.notes
                 sd.selectionCount = room.selectionCount
                 sd.updatedAt = room.updatedAt.flatMap { formatter.date(from: $0) }
@@ -536,6 +551,11 @@ public final class SyncEngine {
                     sortOrder: room.sortOrder,
                     floorPlanUrl: room.floorPlanUrl,
                     photoUrls: room.photoUrls ?? [],
+                    spaceCaptureId: room.spaceCapture?.id,
+                    spaceCaptureUsdzUrl: room.spaceCapture?.usdzUrl,
+                    spaceCaptureCapturedRoomJsonUrl: room.spaceCapture?.capturedRoomJsonUrl,
+                    spaceCaptureThumbnailUrl: room.spaceCapture?.thumbnailUrl,
+                    spaceCaptureCapturedAt: parseDate(room.spaceCapture?.capturedAt),
                     notes: room.notes,
                     selectionCount: room.selectionCount
                 )
@@ -793,6 +813,11 @@ public final class SyncEngine {
                 sd.timelineStart = parseDate(project.timelineStart)
                 sd.timelineTarget = parseDate(project.timelineTarget)
                 sd.notes = project.notes
+                sd.spaceCaptureId = project.spaceCapture?.id
+                sd.spaceCaptureUsdzUrl = project.spaceCapture?.usdzUrl
+                sd.spaceCaptureCapturedRoomJsonUrl = project.spaceCapture?.capturedRoomJsonUrl
+                sd.spaceCaptureThumbnailUrl = project.spaceCapture?.thumbnailUrl
+                sd.spaceCaptureCapturedAt = parseDate(project.spaceCapture?.capturedAt)
                 sd.isArchived = project.isArchived
                 sd.roomCount = project.roomCount
                 sd.selectionCount = project.selectionCount
@@ -812,6 +837,11 @@ public final class SyncEngine {
                     timelineStart: parseDate(project.timelineStart),
                     timelineTarget: parseDate(project.timelineTarget),
                     notes: project.notes,
+                    spaceCaptureId: project.spaceCapture?.id,
+                    spaceCaptureUsdzUrl: project.spaceCapture?.usdzUrl,
+                    spaceCaptureCapturedRoomJsonUrl: project.spaceCapture?.capturedRoomJsonUrl,
+                    spaceCaptureThumbnailUrl: project.spaceCapture?.thumbnailUrl,
+                    spaceCaptureCapturedAt: parseDate(project.spaceCapture?.capturedAt),
                     isArchived: project.isArchived,
                     roomCount: project.roomCount,
                     selectionCount: project.selectionCount,
@@ -833,6 +863,11 @@ public final class SyncEngine {
                 sd.sortOrder = room.sortOrder
                 sd.floorPlanUrl = room.floorPlanUrl
                 sd.photoUrls = room.photoUrls ?? []
+                sd.spaceCaptureId = room.spaceCapture?.id
+                sd.spaceCaptureUsdzUrl = room.spaceCapture?.usdzUrl
+                sd.spaceCaptureCapturedRoomJsonUrl = room.spaceCapture?.capturedRoomJsonUrl
+                sd.spaceCaptureThumbnailUrl = room.spaceCapture?.thumbnailUrl
+                sd.spaceCaptureCapturedAt = parseDate(room.spaceCapture?.capturedAt)
                 sd.notes = room.notes
                 sd.selectionCount = room.selectionCount
                 sd.createdAt = parseDate(room.createdAt)
@@ -845,6 +880,11 @@ public final class SyncEngine {
                     sortOrder: room.sortOrder,
                     floorPlanUrl: room.floorPlanUrl,
                     photoUrls: room.photoUrls ?? [],
+                    spaceCaptureId: room.spaceCapture?.id,
+                    spaceCaptureUsdzUrl: room.spaceCapture?.usdzUrl,
+                    spaceCaptureCapturedRoomJsonUrl: room.spaceCapture?.capturedRoomJsonUrl,
+                    spaceCaptureThumbnailUrl: room.spaceCapture?.thumbnailUrl,
+                    spaceCaptureCapturedAt: parseDate(room.spaceCapture?.capturedAt),
                     notes: room.notes,
                     selectionCount: room.selectionCount,
                     createdAt: parseDate(room.createdAt),

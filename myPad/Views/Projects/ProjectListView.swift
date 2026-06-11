@@ -89,7 +89,7 @@ struct ProjectListView: View {
     // MARK: - Card Grid
 
     private let columns = [
-        GridItem(.adaptive(minimum: 220, maximum: 320), spacing: 16)
+        GridItem(.adaptive(minimum: 220), spacing: 16)
     ]
 
     private var cardView: some View {

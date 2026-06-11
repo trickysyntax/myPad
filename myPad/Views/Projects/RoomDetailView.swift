@@ -11,7 +11,11 @@ struct RoomDetailView: View {
     @State private var isLoading = true
     @State private var selectedStatus: String? = nil
     @State private var showAddSelection = false
+    @State private var showCaptureRoom = false
+    @State private var viewingCapture: SpaceCaptureSummary?
+    @State private var showRemoveCaptureConfirm = false
     @State private var roomPhotoUrls: [String] = []
+    @State private var spaceCapture: SpaceCaptureSummary?
     @State private var collapsedGroups: Set<String> = []
 
     private let api = APIClient.shared
@@ -21,18 +25,24 @@ struct RoomDetailView: View {
             if isLoading {
                 ProgressView()
             } else if selections.isEmpty {
-                EmptyStateView(
-                    systemImage: "checklist",
-                    title: "No Selections",
-                    message: "Add your first selection to this room.",
-                    actionLabel: "Add Selection",
-                    action: { showAddSelection = true }
-                )
+                ScrollView {
+                    VStack(spacing: 16) {
+                        EmptyStateView(
+                            systemImage: "checklist",
+                            title: "No Selections",
+                            message: "Add your first selection to this room.",
+                            actionLabel: "Add Selection",
+                            action: { showAddSelection = true }
+                        )
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                }
+                .background(Color.studioSurface)
             } else {
                 selectionList
             }
         }
-        .navigationTitle(roomName)
         .sheet(isPresented: $showAddSelection) {
             NavigationStack {
                 AssetSearchView(
@@ -42,19 +52,81 @@ struct RoomDetailView: View {
                 )
             }
         }
+        .sheet(isPresented: $showCaptureRoom) {
+            SpaceCaptureSheet(scope: .room(projectId: projectId, roomId: roomId, name: roomName)) { _ in
+                Task { await load() }
+            }
+        }
+        .sheet(item: $viewingCapture) { capture in
+            SpaceCaptureViewer(capture: capture)
+        }
         .onChange(of: showAddSelection) { _, isPresented in
             if !isPresented {
                 Task { await load() }
             }
         }
+        .navigationTitle(roomName)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showAddSelection = true
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button {
+                        showAddSelection = true
+                    } label: {
+                        Label("New Selection", systemImage: "plus.circle")
+                    }
+
+                    Divider()
+
+                    Button {
+                        showCaptureRoom = true
+                    } label: {
+                        Label(spaceCapture == nil ? "Capture 3D Room" : "Recapture 3D Room", systemImage: "cube.transparent")
+                    }
+
+                    if spaceCapture != nil {
+                        Button(role: .destructive) {
+                            showRemoveCaptureConfirm = true
+                        } label: {
+                            Label("Remove 3D Capture", systemImage: "trash")
+                        }
+                    }
                 } label: {
-                    Label("New Selection", systemImage: "plus.circle.fill")
+                    Image(systemName: "ellipsis.circle")
                 }
             }
+        }
+        .overlay(alignment: .bottomLeading) {
+            if let capture = spaceCapture {
+                Button {
+                    viewingCapture = capture
+                } label: {
+                    Label("View 3D", systemImage: "cube.transparent")
+                        .font(.studioCaption(size: 13))
+                }
+                .buttonStyle(WhiteBubbleButtonStyle())
+                .padding(20)
+            } else {
+                Button {
+                    showCaptureRoom = true
+                } label: {
+                    Label("Capture 3D", systemImage: "cube.transparent")
+                        .font(.studioCaption(size: 13))
+                }
+                .buttonStyle(WhiteBubbleButtonStyle())
+                .padding(20)
+            }
+        }
+        .confirmationDialog(
+            "Remove this 3D capture?",
+            isPresented: $showRemoveCaptureConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Remove 3D Capture", role: .destructive) {
+                Task { await removeRoomCapture() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("The current room capture will be hidden. You can capture the room again from the menu.")
         }
         .task { await load() }
         .refreshable { await load() }
@@ -190,10 +262,19 @@ struct RoomDetailView: View {
             }
         } catch {}
 
-        // Load room photoUrls
+        // Load room photoUrls and current 3D capture
         do {
             let room = try await api.getRoom(projectId: projectId, roomId: roomId)
             roomPhotoUrls = room.photoUrls ?? []
+            spaceCapture = room.spaceCapture
+        } catch {}
+    }
+
+    private func removeRoomCapture() async {
+        do {
+            _ = try await api.deleteRoomSpaceCapture(projectId: projectId, roomId: roomId)
+            spaceCapture = nil
+            await load()
         } catch {}
     }
 

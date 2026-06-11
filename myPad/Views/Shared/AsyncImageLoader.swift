@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Loads a remote image with a placeholder and caching via URLCache.
+/// Loads a remote image with a placeholder.
+/// Caching is handled by nginx Cache-Control headers on /uploads/ paths.
 struct AsyncImageLoader: View {
     let url: URL?
     let size: CGSize

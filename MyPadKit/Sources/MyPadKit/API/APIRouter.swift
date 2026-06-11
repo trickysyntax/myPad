@@ -64,6 +64,13 @@ public enum APIRouter {
     // Upload
     case upload
 
+    // Space Captures
+    case uploadProjectSpaceCapture(projectId: String)
+    case deleteProjectSpaceCapture(projectId: String)
+    case uploadRoomSpaceCapture(projectId: String, roomId: String)
+    case deleteRoomSpaceCapture(projectId: String, roomId: String)
+    case getSpaceCapture(id: String)
+
     // Sync
     case syncBootstrap(cursor: String?, pageSize: Int, includeArchived: Bool, includeDiscontinued: Bool)
     case syncChanges(since: String, cursor: String?, pageSize: Int)
@@ -112,6 +119,11 @@ public enum APIRouter {
         case .reorderSelectionFinishes(let pid, let rid, let sid): return "/api/projects/\(pid)/rooms/\(rid)/selections/\(sid)/finishes/reorder"
         case .getBudget(let pid, _, _):    return "/api/projects/\(pid)/budget"
         case .upload:                      return "/api/uploads"
+        case .uploadProjectSpaceCapture(let pid),
+             .deleteProjectSpaceCapture(let pid): return "/api/projects/\(pid)/space-capture"
+        case .uploadRoomSpaceCapture(let pid, let rid),
+             .deleteRoomSpaceCapture(let pid, let rid): return "/api/projects/\(pid)/rooms/\(rid)/space-capture"
+        case .getSpaceCapture(let id):     return "/api/space-captures/\(id)"
         case .syncBootstrap:               return "/api/sync/bootstrap"
         case .syncChanges:                 return "/api/sync/changes"
         }
@@ -123,13 +135,15 @@ public enum APIRouter {
         switch self {
         case .login, .refreshToken, .createVendor, .createAsset, .createFinish,
              .createClient, .createProject, .createRoom, .createSelection,
-             .createSelectionFinish, .archiveProject, .upload:
+             .createSelectionFinish, .archiveProject, .upload,
+             .uploadProjectSpaceCapture, .uploadRoomSpaceCapture:
             return "POST"
         case .updateVendor, .updateAsset, .updateFinish, .updateClient,
              .updateProject, .updateRoom, .updateSelection, .updateSelectionFinish,
              .reorderFinishes, .reorderSelectionFinishes:
             return "PUT"
-        case .deleteAsset, .deleteFinish, .deleteRoom, .deleteSelection, .deleteSelectionFinish:
+        case .deleteAsset, .deleteFinish, .deleteRoom, .deleteSelection, .deleteSelectionFinish,
+             .deleteProjectSpaceCapture, .deleteRoomSpaceCapture:
             return "DELETE"
         case .updateSelectionStatus:
             return "PATCH"

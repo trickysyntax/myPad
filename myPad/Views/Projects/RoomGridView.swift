@@ -1,10 +1,17 @@
 import SwiftUI
 import MyPadKit
 
+private struct DefaultImageResponse: Codable {
+    let url: String?
+}
+
 /// Adaptive grid of room cards inside a project.
 struct RoomGridView: View {
     let projectId: String
     let rooms: [RoomRef]
+    var projectCapture: SpaceCaptureSummary? = nil
+    var onOpenProjectCapture: (() -> Void)? = nil
+    var onCaptureProject: (() -> Void)? = nil
     var onRoomsChanged: (() -> Void)? = nil
 
     @State private var showAddRoom = false
@@ -15,25 +22,37 @@ struct RoomGridView: View {
 
     var body: some View {
         ScrollView {
-            LazyVGrid(columns: columns, spacing: 16) {
-                ForEach(rooms.sorted(by: { $0.sortOrder < $1.sortOrder })) { room in
-                    NavigationLink {
-                        RoomDetailView(projectId: projectId, roomId: room.id, roomName: room.name)
+            VStack(spacing: 16) {
+                SpaceCapturePreviewCard(
+                    capture: projectCapture,
+                    title: "Project 3D Capture",
+                    emptyTitle: "Capture the Project in 3D",
+                    emptyMessage: "Scan the full project envelope with a LiDAR iPad to keep spatial context beside rooms and selections.",
+                    onOpen: { onOpenProjectCapture?() },
+                    onCapture: { onCaptureProject?() }
+                )
+
+                LazyVGrid(columns: columns, spacing: 16) {
+                    ForEach(rooms.sorted(by: { $0.sortOrder < $1.sortOrder })) { room in
+                        NavigationLink {
+                            RoomDetailView(projectId: projectId, roomId: room.id, roomName: room.name)
+                        } label: {
+                            RoomCard(room: room)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    // Add room button
+                    Button {
+                        showAddRoom = true
                     } label: {
-                        RoomCard(room: room)
+                        AddRoomCard()
                     }
                     .buttonStyle(.plain)
                 }
-
-                // Add room button
-                Button {
-                    showAddRoom = true
-                } label: {
-                    AddRoomCard()
-                }
-                .buttonStyle(.plain)
             }
             .padding(.horizontal, 20)
+            .padding(.top, 12)
         }
         .sheet(isPresented: $showAddRoom) {
             AddRoomView(projectId: projectId) { _ in
@@ -47,18 +66,30 @@ struct RoomGridView: View {
 
 struct RoomCard: View {
     let room: RoomRef
+    @State private var defaultImageUrl: URL?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             ZStack {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.studioAccent.opacity(0.06))
-                Image(systemName: roomIcon)
-                    .font(.title)
-                    .fontWeight(.light)
-                    .foregroundStyle(Color.studioAccent.opacity(0.4))
+                if let defaultImageUrl {
+                    AsyncImage(url: defaultImageUrl) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image.resizable().aspectRatio(contentMode: .fill)
+                        case .failure:
+                            roomIconFallback
+                        case .empty:
+                            ProgressView()
+                        @unknown default:
+                            roomIconFallback
+                        }
+                    }
+                } else {
+                    roomIconFallback
+                }
             }
             .frame(height: 100)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(room.name)
@@ -69,6 +100,13 @@ struct RoomCard: View {
                 Text(countLabel(room.selectionCount, singular: "selection"))
                     .font(.studioCaption())
                     .foregroundStyle(Color.studioSecondary)
+
+                if room.spaceCapture != nil {
+                    Label("3D captured", systemImage: "cube.transparent")
+                        .font(.studioCaption(size: 12))
+                        .foregroundStyle(Color.studioAccent)
+                        .padding(.top, 2)
+                }
             }
         }
         .padding(10)
@@ -79,6 +117,33 @@ struct RoomCard: View {
                 .stroke(Color.studioDivider.opacity(0.55), lineWidth: 0.5)
         }
         .shadow(color: Color.studioBrown.opacity(0.045), radius: 8, y: 3)
+        .task {
+            await loadDefaultImage()
+        }
+    }
+
+    private var roomIconFallback: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.studioAccent.opacity(0.06))
+            Image(systemName: roomIcon)
+                .font(.title)
+                .fontWeight(.light)
+                .foregroundStyle(Color.studioAccent.opacity(0.4))
+        }
+    }
+
+    private func loadDefaultImage() async {
+        let encoded = room.name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? room.name
+        let urlString = "\(ServerConfig.baseURL)/api/rooms/default-image?name=\(encoded)"
+        guard let url = URL(string: urlString) else { return }
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            if let result = try? JSONDecoder().decode(DefaultImageResponse.self, from: data),
+               let urlString = result.url, let imageUrl = URL(string: urlString) {
+                defaultImageUrl = imageUrl
+            }
+        } catch {}
     }
 
     private var roomIcon: String {

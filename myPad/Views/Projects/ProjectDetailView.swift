@@ -10,6 +10,9 @@ struct ProjectDetailView: View {
     @State private var errorMessage: String?
     @State private var selectedTab = ProjectTab.rooms
     @State private var showEditProject = false
+    @State private var showCaptureProject = false
+    @State private var viewingCapture: SpaceCaptureSummary?
+    @State private var showRemoveCaptureConfirm = false
 
     enum ProjectTab: String, CaseIterable {
         case rooms = "Rooms"
@@ -64,8 +67,28 @@ struct ProjectDetailView: View {
         .refreshable { await load() }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button { showEditProject = true } label: {
-                    Image(systemName: "pencil")
+                Menu {
+                    Button {
+                        showCaptureProject = true
+                    } label: {
+                        Label(project?.spaceCapture == nil ? "Capture 3D Project" : "Recapture 3D Project", systemImage: "cube.transparent")
+                    }
+
+                    if project?.spaceCapture != nil {
+                        Button(role: .destructive) {
+                            showRemoveCaptureConfirm = true
+                        } label: {
+                            Label("Remove 3D Capture", systemImage: "trash")
+                        }
+                    }
+
+                    Divider()
+
+                    Button { showEditProject = true } label: {
+                        Label("Edit Project", systemImage: "pencil")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
                 }
             }
         }
@@ -77,6 +100,28 @@ struct ProjectDetailView: View {
                 }
             }
         }
+        .sheet(isPresented: $showCaptureProject) {
+            if let project {
+                SpaceCaptureSheet(scope: .project(projectId: project.id, name: project.name)) { _ in
+                    Task { await load() }
+                }
+            }
+        }
+        .sheet(item: $viewingCapture) { capture in
+            SpaceCaptureViewer(capture: capture)
+        }
+        .confirmationDialog(
+            "Remove this 3D capture?",
+            isPresented: $showRemoveCaptureConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Remove 3D Capture", role: .destructive) {
+                Task { await removeProjectCapture() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("The current project capture will be hidden. You can capture the project again from the menu.")
+        }
     }
 
     // MARK: - Rooms Tab
@@ -84,13 +129,38 @@ struct ProjectDetailView: View {
     @ViewBuilder
     private func roomsTab(_ project: ProjectDetail) -> some View {
         if let rooms = project.rooms, !rooms.isEmpty {
-            RoomGridView(projectId: project.id, rooms: rooms, onRoomsChanged: { Task { await load() } })
-        } else {
-            EmptyStateView(
-                systemImage: "square.split.bottomrightquarter",
-                title: "No Rooms",
-                message: "Add rooms to this project to start organizing selections."
+            RoomGridView(
+                projectId: project.id,
+                rooms: rooms,
+                projectCapture: project.spaceCapture,
+                onOpenProjectCapture: { if let capture = project.spaceCapture { viewingCapture = capture } },
+                onCaptureProject: { showCaptureProject = true },
+                onRoomsChanged: { Task { await load() } }
             )
+            .background(Color.studioSurface)
+        } else {
+            ScrollView {
+                VStack(spacing: 16) {
+                    SpaceCapturePreviewCard(
+                        capture: project.spaceCapture,
+                        title: "Project 3D Capture",
+                        emptyTitle: "Capture the Project in 3D",
+                        emptyMessage: "Scan the full project envelope with a LiDAR iPad to keep spatial context beside rooms and selections.",
+                        onOpen: { if let capture = project.spaceCapture { viewingCapture = capture } },
+                        onCapture: { showCaptureProject = true }
+                    )
+
+                    EmptyStateView(
+                        systemImage: "square.split.bottomrightquarter",
+                        title: "No Rooms",
+                        message: "Add rooms to this project to start organizing selections."
+                    )
+                    .padding(.top, 8)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+            }
+            .background(Color.studioSurface)
         }
     }
 
@@ -178,20 +248,36 @@ struct ProjectDetailView: View {
         isLoadingSelections = true
         defer { isLoadingSelections = false }
 
-        var collected: [SelectionDetail] = []
-        for room in rooms {
-            do {
-                let selections = try await api.listSelections(
-                    projectId: projectId,
-                    roomId: room.id,
-                    status: selectionFilter
-                )
-                collected.append(contentsOf: selections)
-            } catch {
-                // Skip rooms that fail
+        await withTaskGroup(of: [SelectionDetail].self) { group in
+            for room in rooms {
+                group.addTask {
+                    do {
+                        return try await api.listSelections(
+                            projectId: projectId,
+                            roomId: room.id,
+                            status: selectionFilter
+                        )
+                    } catch {
+                        return []
+                    }
+                }
             }
+
+            var collected: [SelectionDetail] = []
+            for await selections in group {
+                collected.append(contentsOf: selections)
+            }
+            allSelections = collected
         }
-        allSelections = collected
+    }
+
+    private func removeProjectCapture() async {
+        do {
+            _ = try await api.deleteProjectSpaceCapture(projectId: projectId)
+            await load()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 }
 

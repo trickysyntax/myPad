@@ -106,6 +106,25 @@ struct StudioButtonStyle: ButtonStyle {
     }
 }
 
+// MARK: - White Bubble Button Style
+
+/// A clean white bubble button with a soft shadow, used for floating actions
+/// that need to pop against warm-ivory backgrounds.
+struct WhiteBubbleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.studioCaption(size: 14))
+            .fontWeight(.semibold)
+            .padding(.horizontal, 22)
+            .padding(.vertical, 11)
+            .background(Color.studioAccent)
+            .foregroundStyle(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+    }
+}
+
 // MARK: - Noise Texture
 
 /// Generates a subtle noise image once, then tiles it as a multiply overlay

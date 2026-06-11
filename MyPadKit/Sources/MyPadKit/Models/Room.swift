@@ -7,6 +7,7 @@ public struct RoomDetail: Codable, Identifiable, Sendable, Hashable {
     public let sortOrder: Int
     public let floorPlanUrl: String?
     public let photoUrls: [String]?
+    public let spaceCapture: SpaceCaptureSummary?
     public let notes: String?
     public let selectionCount: Int
     public let createdAt: String?

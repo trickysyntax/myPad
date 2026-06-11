@@ -170,6 +170,94 @@ final class ModelDecodingTests: XCTestCase {
         XCTAssertEqual(response.data[0].imageUrls, ["https://example.com/detail.jpg"])
     }
 
+    // MARK: - SpaceCapture
+
+    func testDecodeSpaceCaptureSummaryAndOwners() throws {
+        let captureJSON = """
+        {
+            "id": "capture-1",
+            "scope": "room",
+            "project_id": "project-1",
+            "room_id": "room-1",
+            "usdz_url": "/uploads/space_captures/example.usdz",
+            "captured_room_json_url": "/uploads/space_captures/example.json",
+            "thumbnail_url": null,
+            "metadata": {
+                "capture_source": "RoomPlan",
+                "wall_count": 8,
+                "includes_openings": true
+            },
+            "captured_at": null,
+            "created_at": "2026-05-25T20:00:00Z",
+            "updated_at": "2026-05-25T20:00:00Z"
+        }
+        """.data(using: .utf8)!
+
+        let capture = try decoder.decode(SpaceCaptureSummary.self, from: captureJSON)
+        XCTAssertEqual(capture.id, "capture-1")
+        XCTAssertEqual(capture.usdzUrl, "/uploads/space_captures/example.usdz")
+        XCTAssertEqual(capture.metadata["capture_source"], .string("RoomPlan"))
+        XCTAssertEqual(capture.metadata["includes_openings"], .bool(true))
+
+        let projectJSON = """
+        {
+            "id": "project-1",
+            "name": "Smith Residence",
+            "client": null,
+            "project_type": "Residential",
+            "status": "active",
+            "budget_total": null,
+            "markup_pct": null,
+            "timeline_start": null,
+            "timeline_target": null,
+            "notes": null,
+            "cover_photo_url": null,
+            "space_capture": {
+                "id": "capture-project",
+                "scope": "project",
+                "project_id": "project-1",
+                "room_id": null,
+                "usdz_url": "/uploads/space_captures/project.usdz",
+                "captured_room_json_url": null,
+                "thumbnail_url": null,
+                "metadata": {},
+                "captured_at": null,
+                "created_at": "2026-05-25T20:00:00Z",
+                "updated_at": "2026-05-25T20:00:00Z"
+            },
+            "is_archived": false,
+            "rooms": [
+                {
+                    "id": "room-1",
+                    "name": "Living Room",
+                    "sort_order": 1,
+                    "selection_count": 2,
+                    "space_capture": {
+                        "id": "capture-room",
+                        "scope": "room",
+                        "project_id": "project-1",
+                        "room_id": "room-1",
+                        "usdz_url": "/uploads/space_captures/room.usdz",
+                        "captured_room_json_url": null,
+                        "thumbnail_url": null,
+                        "metadata": {},
+                        "captured_at": null,
+                        "created_at": "2026-05-25T20:00:00Z",
+                        "updated_at": "2026-05-25T20:00:00Z"
+                    }
+                }
+            ],
+            "selection_count": 2,
+            "created_at": "2026-01-01T00:00:00Z",
+            "updated_at": "2026-05-25T20:00:00Z"
+        }
+        """.data(using: .utf8)!
+
+        let project = try decoder.decode(ProjectDetail.self, from: projectJSON)
+        XCTAssertEqual(project.spaceCapture?.id, "capture-project")
+        XCTAssertEqual(project.rooms?.first?.spaceCapture?.id, "capture-room")
+    }
+
     // MARK: - SyncEnvelope
 
     func testDecodeSyncEnvelope() throws {

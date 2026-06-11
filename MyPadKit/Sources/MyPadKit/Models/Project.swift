@@ -12,6 +12,7 @@ public struct RoomRef: Codable, Identifiable, Sendable {
     public let name: String
     public let sortOrder: Int
     public let selectionCount: Int
+    public let spaceCapture: SpaceCaptureSummary?
 }
 
 // MARK: - Project Summary (list endpoint)
@@ -27,6 +28,7 @@ public struct ProjectSummary: Codable, Identifiable, Sendable, Hashable {
     public let selectionCount: Int
     public let timelineTarget: String?
     public let coverPhotoUrl: String?
+    public let spaceCapture: SpaceCaptureSummary?
     public let isArchived: Bool
     public let createdAt: String?
 }
@@ -45,6 +47,7 @@ public struct ProjectDetail: Codable, Identifiable, Sendable {
     public let timelineTarget: String?
     public let notes: String?
     public let coverPhotoUrl: String?
+    public let spaceCapture: SpaceCaptureSummary?
     public let isArchived: Bool
     public let rooms: [RoomRef]?
     public let selectionCount: Int
